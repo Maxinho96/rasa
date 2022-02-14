@@ -205,10 +205,10 @@ def test_determine_token_labels_throws_error():
 
 
 def test_determine_token_labels_no_extractors():
-    with pytest.raises(ValueError):
-        determine_token_labels(
-            CH_correct_segmentation[0], [CH_correct_entity, CH_wrong_entity], None
-        )
+    label = determine_token_labels(
+        CH_correct_segmentation[0], [CH_correct_entity, CH_wrong_entity], None
+    )
+    assert label == "direction"
 
 
 def test_determine_token_labels_no_extractors_no_overlap():
@@ -220,7 +220,7 @@ def test_determine_token_labels_with_extractors():
     label = determine_token_labels(
         CH_correct_segmentation[0],
         [CH_correct_entity, CH_wrong_entity],
-        {SpacyEntityExtractor.__name__, MitieEntityExtractor.__name__,},
+        {SpacyEntityExtractor.__name__, MitieEntityExtractor.__name__},
     )
     assert label == "direction"
 
@@ -239,7 +239,7 @@ def test_determine_token_labels_with_extractors():
                     "extractor": "EntityExtractorA",
                 }
             ],
-            ["EntityExtractorA"],
+            {"EntityExtractorA"},
             0.0,
         ),
         (Token("pizza", 4), [], ["EntityExtractorA"], 0.0),
@@ -255,7 +255,7 @@ def test_determine_token_labels_with_extractors():
                     "extractor": "CRFEntityExtractor",
                 }
             ],
-            ["CRFEntityExtractor"],
+            {"CRFEntityExtractor"},
             0.87,
         ),
         (
@@ -270,7 +270,7 @@ def test_determine_token_labels_with_extractors():
                     "extractor": "DIETClassifier",
                 }
             ],
-            ["DIETClassifier"],
+            {"DIETClassifier"},
             0.87,
         ),
     ],
@@ -278,7 +278,7 @@ def test_determine_token_labels_with_extractors():
 def test_get_entity_confidences(
     token: Token,
     entities: List[Dict[Text, Any]],
-    extractors: List[Text],
+    extractors: Set[Text],
     expected_confidence: float,
 ):
     confidence = _get_entity_confidences(token, entities, extractors)
@@ -396,9 +396,7 @@ async def test_run_evaluation_with_regex_message(mood_agent: Agent, tmp_path: Pa
     )
 
 
-async def test_eval_data(
-    tmp_path: Path, project: Text, trained_rasa_model: Text,
-):
+async def test_eval_data(tmp_path: Path, project: Text, trained_rasa_model: Text):
     config_path = os.path.join(project, "config.yml")
     data_importer = TrainingDataImporter.load_nlu_importer_from_config(
         config_path,
@@ -1017,7 +1015,7 @@ async def test_nlu_comparison(
     monkeypatch.setattr(
         sys.modules["rasa.nlu.test"],
         "get_eval_data",
-        AsyncMock(return_value=(1, None, (None,),)),
+        AsyncMock(return_value=(1, None, (None,))),
     )
     monkeypatch.setattr(
         sys.modules["rasa.nlu.test"],
@@ -1221,7 +1219,7 @@ class ConstantProcessor:
         self.prediction = prediction_to_return
 
     async def parse_message(
-        self, message: UserMessage, only_output_properties: bool = True,
+        self, message: UserMessage, only_output_properties: bool = True
     ) -> Dict[Text, Any]:
         return self.prediction
 

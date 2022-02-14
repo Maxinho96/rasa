@@ -235,7 +235,7 @@ def background_server(
         import sys
 
         monkeypatch.setattr(
-            sys.modules["rasa.model_training"], "train", mocked_training_function,
+            sys.modules["rasa.model_training"], "train", mocked_training_function
         )
 
         from rasa import __main__
@@ -439,7 +439,7 @@ async def test_parse_without_nlu_model(rasa_app_core: SanicASGITestClient):
     assert all(prop in rjs for prop in ["entities", "intent", "text"])
 
 
-async def test_parse_on_invalid_emulation_mode(rasa_app: SanicASGITestClient,):
+async def test_parse_on_invalid_emulation_mode(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post(
         "/model/parse?emulation_mode=ANYTHING", json={"text": "hello"}
     )
@@ -557,7 +557,7 @@ async def test_train_with_retrieval_events_success(
 
 
 def assert_trained_model(
-    response_body: bytes, tmp_path_factory: TempPathFactory,
+    response_body: bytes, tmp_path_factory: TempPathFactory
 ) -> None:
     # save model to temporary file
 
@@ -573,7 +573,7 @@ def assert_trained_model(
 
 
 async def test_train_with_yaml(
-    rasa_app: SanicASGITestClient, tmp_path_factory: TempPathFactory,
+    rasa_app: SanicASGITestClient, tmp_path_factory: TempPathFactory
 ):
     training_data = """
 version: "3.0"
@@ -791,7 +791,7 @@ async def test_evaluate_stories_end_to_end(
     }
 
 
-async def test_add_message(rasa_app: SanicASGITestClient,):
+async def test_add_message(rasa_app: SanicASGITestClient):
 
     conversation_id = "test_add_message_test_id"
 
@@ -858,7 +858,7 @@ async def test_evaluate_invalid_intent_model_file(rasa_app: SanicASGITestClient)
 
 async def test_evaluate_intent_without_body(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post(
-        "/model/test/intents", headers={"Content-type": rasa.server.YAML_CONTENT_TYPE},
+        "/model/test/intents", headers={"Content-type": rasa.server.YAML_CONTENT_TYPE}
     )
 
     assert response.status == HTTPStatus.BAD_REQUEST
@@ -1180,12 +1180,12 @@ async def test_predict_invalid_entities_format(rasa_app: SanicASGITestClient):
 
 async def test_predict_empty_request_body(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post(
-        "/model/predict", headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
+        "/model/predict", headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE}
     )
     assert response.status == HTTPStatus.BAD_REQUEST
 
 
-async def test_append_events_empty_request_body(rasa_app: SanicASGITestClient,):
+async def test_append_events_empty_request_body(rasa_app: SanicASGITestClient):
     _, response = await rasa_app.post(
         "/conversations/testid/tracker/events",
         headers={"Content-Type": rasa.server.JSON_CONTENT_TYPE},
@@ -2122,3 +2122,40 @@ async def test_update_conversation_with_events(
         conversation_id, agent.processor, domain, events_to_append
     )
     assert list(fetched_tracker.events) == with_model_ids(expected_events, model_id)
+
+
+async def test_append_events_does_not_repeat_session_start(
+    rasa_app: SanicASGITestClient,
+):
+    session_start_events = [
+        {
+            "event": "action",
+            "timestamp": 1644577572.9639301,
+            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+            "name": "action_session_start",
+            "policy": None,
+            "confidence": 1.0,
+            "action_text": None,
+            "hide_rule_turn": False,
+        },
+        {
+            "event": "session_started",
+            "timestamp": 1644577572.963996,
+            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+        },
+        {
+            "event": "action",
+            "timestamp": 1644577572.964009,
+            "metadata": {"model_id": "f90a69066e4a438aa6edfbed5b529919"},
+            "name": "action_listen",
+            "policy": None,
+            "confidence": None,
+            "action_text": None,
+            "hide_rule_turn": False,
+        },
+    ]
+    _, response = await rasa_app.post(
+        "/conversations/testid/tracker/events", json=session_start_events
+    )
+
+    assert response.json["events"] == session_start_events
